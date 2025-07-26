@@ -1,10 +1,21 @@
-import Link from 'next/link'
+'use client'
+import { useEffect, useState } from 'react'
+import TV from '../components/TV'
 
-export default function HomePage() {
+export default function RetroTVPage() {
+  const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 300)
+    return () => clearTimeout(t)
+  }, [])
+
   return (
-      <div>
-        <h1>Home</h1>
-        <Link href="/about">About</Link>
-      </div>
+    <main className="w-screen h-screen overflow-hidden">
+      {loading ? (
+        <div className="flex justify-center items-center h-screen text-lg">Loading…</div>
+      ) : (
+        <TV />
+      )}
+    </main>
   )
 }
