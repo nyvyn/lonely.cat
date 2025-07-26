@@ -10,8 +10,12 @@ export default function RetroTVPage() {
   }, [])
 
   return (
-    <main className="flex justify-center items-center h-screen">
-      {loading ? <div className="text-lg">Loading…</div> : <TV />}
+    <main className="w-screen h-screen overflow-hidden">
+      {loading ? (
+        <div className="flex justify-center items-center h-screen text-lg">Loading…</div>
+      ) : (
+        <TV />
+      )}
     </main>
   )
 }
