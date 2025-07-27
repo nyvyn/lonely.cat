@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
-import Cat from './Cat'
+import CatAnimation from './CatAnimation'
 
-describe('Cat', () => {
+describe('CatAnimation', () => {
   it('renders cat element', () => {
-    render(<Cat />)
+    render(<CatAnimation />)
     expect(screen.getByTestId('cat')).toBeTruthy()
-    expect(screen.getByTestId('tail')).toBeTruthy()
+    expect(screen.getByTestId('cat-sprite')).toBeTruthy()
   })
 })

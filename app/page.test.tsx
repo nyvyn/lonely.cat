@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react'
 import { test, expect } from 'vitest'
-import Page from './page'
+import HomePage from './page'
 
-test('renders TV page', async () => {
-  render(<Page />)
+test('renders HomePage with TV', async () => {
+  render(<HomePage />)
   const tv = await screen.findByTestId('tv')
   expect(tv).toBeTruthy()
 })
