@@ -18,7 +18,7 @@ export default function CatAnimation() {
   const spriteY = -row * 240
 
   return (
-    <div className="absolute bottom-8 right-8" role="img" aria-label="cat" data-testid="cat">
+    <div className="absolute bottom-4 right-[-20]" role="img" aria-label="cat" data-testid="cat">
       <div 
         className="w-[200px] h-[240px] bg-no-repeat overflow-hidden"
         style={{

@@ -28,11 +28,26 @@ body {
 }
 
 @keyframes staticNoise {
-  0% { filter: hue-rotate(0deg) contrast(100%) brightness(100%); }
-  25% { filter: hue-rotate(90deg) contrast(120%) brightness(90%); }
-  50% { filter: hue-rotate(180deg) contrast(80%) brightness(110%); }
-  75% { filter: hue-rotate(270deg) contrast(110%) brightness(85%); }
-  100% { filter: hue-rotate(360deg) contrast(100%) brightness(100%); }
+  0% { 
+    background-position: 0 0, 20px 20px, 40px 40px, 60px 60px, 80px 80px, 100px 100px;
+    opacity: 0.3;
+  }
+  25% { 
+    background-position: 10px 5px, 30px 25px, 45px 35px, 65px 55px, 85px 75px, 105px 95px;
+    opacity: 0.4;
+  }
+  50% { 
+    background-position: 20px 10px, 40px 30px, 50px 30px, 70px 50px, 90px 70px, 110px 90px;
+    opacity: 0.2;
+  }
+  75% { 
+    background-position: 30px 15px, 50px 35px, 55px 25px, 75px 45px, 95px 65px, 115px 85px;
+    opacity: 0.5;
+  }
+  100% { 
+    background-position: 0 0, 20px 20px, 40px 40px, 60px 60px, 80px 80px, 100px 100px;
+    opacity: 0.3;
+  }
 }
 
 @keyframes wag {
