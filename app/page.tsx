@@ -2,7 +2,6 @@
 import CatAnimation from "@/components/CatAnimation";
 import StaticAnimation from "@/components/StaticAnimation";
 import { useEffect, useState } from 'react'
-import RetroScreen from '../components/RetroScreen'
 
 export default function HomePage() {
   const [loading, setLoading] = useState(true)
@@ -18,7 +17,6 @@ export default function HomePage() {
       ) : (
           <div className="relative w-screen h-screen">
             <StaticAnimation/>
-            <RetroScreen/>
             <CatAnimation/>
           </div>
       )}
