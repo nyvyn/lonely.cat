@@ -35,5 +35,3 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-## Retro TV Home Page
-The landing page displays a 1950's television set with animated static and a small cat sitting in front. The scene loads after a short spinner and respects reduced-motion settings.

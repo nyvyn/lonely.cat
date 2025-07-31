@@ -5,16 +5,19 @@ After finishing a task or subtask, summarize what you did, what happened, and wh
 Then, use platform-specific speech synthesis to read it aloud.
 
 ### macOS
-
+```shell
 say "Finished provisioning server. No errors occurred. Next: Start load testing."
+```
 
 ### Windows
-
+```shell
 powershell -Command "Add-Type -AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak('Finished provisioning server. No errors occurred. Next: Start load testing.')"
+```
 
 ### Linux
-
+```shell
 (summary='Finished provisioning server. No errors occurred. Next: Start load testing.'; command -v espeak &>/dev/null && espeak "$summary" || command -v spd-say &>/dev/null && spd-say "$summary" || command -v festival &>/dev/null && echo "$summary" | festival --tts || echo "$summary")
+```
 
 ## Repository Standards
 
