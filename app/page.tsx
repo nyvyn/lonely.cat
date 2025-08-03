@@ -1,10 +1,10 @@
 'use client'
-import CatGame from '@/components/CatGame'
+import LonelyCat from '@/components/LonelyCat'
 
 export default function HomePage() {
   return (
     <main className="w-screen h-screen overflow-hidden">
-      <CatGame />
+      <LonelyCat />
     </main>
   )
 }
