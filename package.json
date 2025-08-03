@@ -12,7 +12,10 @@
   "dependencies": {
     "next": "15.4.4",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "phaser": "^3.90.0",
+    "matter-js": "^0.20.0",
+    "behavior3js": "^0.2.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.11",
