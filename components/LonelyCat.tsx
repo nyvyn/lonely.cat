@@ -22,13 +22,6 @@ import * as b3 from 'behavior3js'
  */
 
 // Type definitions for Phaser and behavior3js
-interface PhaserScene {
-  textures: {
-    addCanvas: (key: string, canvas: HTMLCanvasElement) => void
-    exists: (key: string) => boolean
-  }
-}
-
 interface Velocity {
   x: number
   y: number
@@ -43,295 +36,6 @@ function hasMatterPhysics(body: unknown): body is MatterBody {
   return body !== null && typeof body === 'object' && 'velocity' in body
 }
 
-/**
- * SVG Texture Manager - Generates dynamic cat textures for different states
- * 
- * This class creates SVG-based textures for:
- * - Idle states with breathing and blinking
- * - Movement states with directional lean and leg motion
- * - Sleep state with curled position and Z symbols
- * 
- * Features:
- * - Texture caching for performance
- * - Dynamic animation based on game state
- * - Realistic cat anatomy with fur patterns
- */
-class SVGTextureManager {
-  private scene: PhaserScene
-  private textureCache = new Map<string, string>()
-  private createdTextures = new Set<string>()
-
-  constructor(scene: PhaserScene) {
-    this.scene = scene
-  }
-
-  generateIdleTexture(frame: number, eyeState = 'open'): string {
-    const cacheKey = `idle-${frame}-${eyeState}`
-    if (this.textureCache.has(cacheKey)) {
-      return this.textureCache.get(cacheKey)!
-    }
-
-    const breathingScale = 1 + Math.sin(frame * 0.05) * 0.02
-    const tailSway = Math.sin(frame * 0.02) * 8
-    const eyeHeight = eyeState === 'closed' ? 2 : 8 + Math.sin(frame * 0.03)
-
-    const svg = `<svg width="200" height="240" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <radialGradient id="bodyGradient" cx="0.3" cy="0.3">
-          <stop offset="0%" stop-color="#F4E4BC"/>
-          <stop offset="100%" stop-color="#D2B48C"/>
-        </radialGradient>
-        <pattern id="stripes" patternUnits="userSpaceOnUse" width="4" height="4">
-          <path d="M 0,4 L 4,0 M -1,1 L 1,-1 M 3,5 L 5,3" stroke="#CD853F" stroke-width="0.5"/>
-        </pattern>
-      </defs>
-      
-      <!-- Shadow -->
-      <ellipse cx="100" cy="220" rx="60" ry="15" fill="rgba(0,0,0,0.2)"/>
-      
-      <!-- Tail -->
-      <g transform="translate(150,200) rotate(${tailSway})">
-        <path d="M0,0 Q20,-20 15,-40 Q10,-60 20,-80" 
-              stroke="url(#bodyGradient)" stroke-width="14" stroke-linecap="round"/>
-        <path d="M0,0 Q20,-20 15,-40 Q10,-60 20,-80" 
-              stroke="url(#stripes)" stroke-width="12" stroke-linecap="round"/>
-      </g>
-      
-      <!-- Back legs -->
-      <ellipse cx="85" cy="200" rx="8" ry="25" fill="url(#bodyGradient)"/>
-      <ellipse cx="115" cy="200" rx="8" ry="25" fill="url(#bodyGradient)"/>
-      <circle cx="85" cy="218" r="6" fill="#8B4513"/>
-      <circle cx="115" cy="218" r="6" fill="#8B4513"/>
-      
-      <!-- Body -->
-      <ellipse cx="100" cy="160" rx="${50 * breathingScale}" ry="${40 * breathingScale}" 
-               fill="url(#bodyGradient)" transform="scale(${breathingScale})"/>
-      <ellipse cx="100" cy="160" rx="${45 * breathingScale}" ry="${35 * breathingScale}" 
-               fill="url(#stripes)" opacity="0.6" transform="scale(${breathingScale})"/>
-      
-      <!-- Front legs -->
-      <ellipse cx="80" cy="185" rx="7" ry="20" fill="url(#bodyGradient)"/>
-      <ellipse cx="120" cy="185" rx="7" ry="20" fill="url(#bodyGradient)"/>
-      <circle cx="80" cy="200" r="5" fill="#8B4513"/>
-      <circle cx="120" cy="200" r="5" fill="#8B4513"/>
-      
-      <!-- Neck -->
-      <ellipse cx="100" cy="125" rx="25" ry="20" fill="url(#bodyGradient)"/>
-      
-      <!-- Head -->
-      <circle cx="100" cy="100" r="35" fill="url(#bodyGradient)"/>
-      <circle cx="100" cy="100" r="30" fill="url(#stripes)" opacity="0.4"/>
-      
-      <!-- Ears -->
-      <g id="ears">
-        <path d="M75,75 L85,55 L95,75" fill="url(#bodyGradient)"/>
-        <path d="M105,75 L115,55 L125,75" fill="url(#bodyGradient)"/>
-        <path d="M78,70 L85,60 L92,70" fill="#FFB6C1"/>
-        <path d="M108,70 L115,60 L122,70" fill="#FFB6C1"/>
-      </g>
-      
-      <!-- Eyes -->
-      <g id="eyes">
-        <ellipse cx="88" cy="95" rx="8" ry="${eyeHeight}" fill="#32CD32"/>
-        <ellipse cx="112" cy="95" rx="8" ry="${eyeHeight}" fill="#32CD32"/>
-        <ellipse cx="88" cy="95" rx="4" ry="${Math.max(1, eyeHeight - 2)}" fill="#000"/>
-        <ellipse cx="112" cy="95" rx="4" ry="${Math.max(1, eyeHeight - 2)}" fill="#000"/>
-        <ellipse cx="90" cy="93" rx="1" ry="${Math.max(0.5, eyeHeight - 5)}" fill="#FFF"/>
-        <ellipse cx="114" cy="93" rx="1" ry="${Math.max(0.5, eyeHeight - 5)}" fill="#FFF"/>
-      </g>
-      
-      <!-- Nose -->
-      <path d="M97,105 L100,108 L103,105 Z" fill="#FF69B4"/>
-      
-      <!-- Mouth -->
-      <path d="M100,108 Q95,112 90,110" stroke="#8B4513" stroke-width="1.5"/>
-      <path d="M100,108 Q105,112 110,110" stroke="#8B4513" stroke-width="1.5"/>
-      
-      <!-- Whiskers -->
-      <g stroke="#8B4513" stroke-width="1">
-        <path d="M70,100 L55,98"/>
-        <path d="M70,105 L55,105"/>
-        <path d="M70,110 L55,112"/>
-        <path d="M130,100 L145,98"/>
-        <path d="M130,105 L145,105"/>
-        <path d="M130,110 L145,112"/>
-      </g>
-      
-      <!-- Chest marking -->
-      <ellipse cx="100" cy="145" rx="12" ry="8" fill="#FFF" opacity="0.8"/>
-    </svg>`
-
-    this.textureCache.set(cacheKey, svg)
-    return svg
-  }
-
-  generateMovingTexture(velocity: Velocity, frame: number): string {
-    const speed = Math.hypot(velocity.x, velocity.y)
-    const direction = Math.atan2(velocity.y, velocity.x)
-    const cacheKey = `moving-${Math.round(direction * 10)}-${Math.round(speed * 10)}-${frame}`
-    
-    if (this.textureCache.has(cacheKey)) {
-      return this.textureCache.get(cacheKey)!
-    }
-
-    // Lean body in movement direction
-    const bodyLean = Math.min(speed * 5, 15)
-    const legCycle = Math.sin(frame * 0.3) * 5
-    const tailTrail = -direction * 20 + Math.sin(frame * 0.2) * 10
-
-    const svg = `<svg width="200" height="240" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <radialGradient id="bodyGradient" cx="0.3" cy="0.3">
-          <stop offset="0%" stop-color="#F4E4BC"/>
-          <stop offset="100%" stop-color="#D2B48C"/>
-        </radialGradient>
-        <pattern id="stripes" patternUnits="userSpaceOnUse" width="4" height="4">
-          <path d="M 0,4 L 4,0 M -1,1 L 1,-1 M 3,5 L 5,3" stroke="#CD853F" stroke-width="0.5"/>
-        </pattern>
-      </defs>
-      
-      <g transform="translate(100,120) rotate(${bodyLean * Math.cos(direction)}) translate(-100,-120)">
-        <!-- Shadow -->
-        <ellipse cx="100" cy="220" rx="60" ry="15" fill="rgba(0,0,0,0.2)"/>
-        
-        <!-- Tail -->
-        <g transform="translate(150,200) rotate(${tailTrail})">
-          <path d="M0,0 Q20,-20 15,-40 Q10,-60 20,-80" 
-                stroke="url(#bodyGradient)" stroke-width="14" stroke-linecap="round"/>
-        </g>
-        
-        <!-- Body -->
-        <ellipse cx="100" cy="160" rx="50" ry="40" fill="url(#bodyGradient)"/>
-        <ellipse cx="100" cy="160" rx="45" ry="35" fill="url(#stripes)" opacity="0.6"/>
-        
-        <!-- Legs with running motion -->
-        <ellipse cx="${85 + legCycle}" cy="200" rx="8" ry="25" fill="url(#bodyGradient)"/>
-        <ellipse cx="${115 - legCycle}" cy="200" rx="8" ry="25" fill="url(#bodyGradient)"/>
-        <ellipse cx="${80 - legCycle}" cy="185" rx="7" ry="20" fill="url(#bodyGradient)"/>
-        <ellipse cx="${120 + legCycle}" cy="185" rx="7" ry="20" fill="url(#bodyGradient)"/>
-        
-        <!-- Head -->
-        <ellipse cx="100" cy="125" rx="25" ry="20" fill="url(#bodyGradient)"/>
-        <circle cx="100" cy="100" r="35" fill="url(#bodyGradient)"/>
-        
-        <!-- Ears -->
-        <path d="M75,75 L85,55 L95,75" fill="url(#bodyGradient)"/>
-        <path d="M105,75 L115,55 L125,75" fill="url(#bodyGradient)"/>
-        
-        <!-- Eyes -->
-        <ellipse cx="88" cy="95" rx="8" ry="6" fill="#32CD32"/>
-        <ellipse cx="112" cy="95" rx="8" ry="6" fill="#32CD32"/>
-        <ellipse cx="88" cy="95" rx="4" ry="3" fill="#000"/>
-        <ellipse cx="112" cy="95" rx="4" ry="3" fill="#000"/>
-        
-        <!-- Nose and mouth -->
-        <path d="M97,105 L100,108 L103,105 Z" fill="#FF69B4"/>
-        <path d="M100,108 Q95,112 90,110" stroke="#8B4513" stroke-width="1.5"/>
-        <path d="M100,108 Q105,112 110,110" stroke="#8B4513" stroke-width="1.5"/>
-        
-        <!-- Whiskers blowing back -->
-        <g stroke="#8B4513" stroke-width="1">
-          <path d="M70,100 L${55 - speed * 3},${98 - speed}"/>
-          <path d="M70,105 L${55 - speed * 3},105"/>
-          <path d="M70,110 L${55 - speed * 3},${112 + speed}"/>
-          <path d="M130,100 L${145 + speed * 3},${98 - speed}"/>
-          <path d="M130,105 L${145 + speed * 3},105"/>
-          <path d="M130,110 L${145 + speed * 3},${112 + speed}"/>
-        </g>
-      </g>
-    </svg>`
-
-    this.textureCache.set(cacheKey, svg)
-    return svg
-  }
-
-  generateSleepingTexture(frame: number): string {
-    const cacheKey = `sleeping-${frame}`
-    if (this.textureCache.has(cacheKey)) {
-      return this.textureCache.get(cacheKey)!
-    }
-
-    const breathingScale = 1 + Math.sin(frame * 0.02) * 0.03
-    
-    const svg = `<svg width="200" height="240" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <radialGradient id="bodyGradient" cx="0.3" cy="0.3">
-          <stop offset="0%" stop-color="#F4E4BC"/>
-          <stop offset="100%" stop-color="#D2B48C"/>
-        </radialGradient>
-      </defs>
-      
-      <!-- Shadow -->
-      <ellipse cx="100" cy="220" rx="80" ry="20" fill="rgba(0,0,0,0.3)"/>
-      
-      <!-- Curled up body -->
-      <ellipse cx="100" cy="180" rx="${60 * breathingScale}" ry="${45 * breathingScale}" 
-               fill="url(#bodyGradient)" transform="scale(${breathingScale})"/>
-      
-      <!-- Head tucked in -->
-      <circle cx="100" cy="150" r="30" fill="url(#bodyGradient)"/>
-      
-      <!-- Closed eyes -->
-      <path d="M85,145 Q90,142 95,145" stroke="#000" stroke-width="2"/>
-      <path d="M105,145 Q110,142 115,145" stroke="#000" stroke-width="2"/>
-      
-      <!-- Nose -->
-      <circle cx="100" cy="155" r="2" fill="#FF69B4"/>
-      
-      <!-- Tail wrapped around -->
-      <path d="M140,200 Q160,180 150,160 Q140,140 120,150 Q100,160 90,170" 
-            stroke="url(#bodyGradient)" stroke-width="16" stroke-linecap="round"/>
-      
-      <!-- ZZZ sleep symbols -->
-      <g opacity="0.7">
-        <text x="140" y="120" font-family="Arial" font-size="16" font-weight="bold" fill="#87CEEB">Z</text>
-        <text x="150" y="100" font-family="Arial" font-size="20" font-weight="bold" fill="#87CEEB">Z</text>
-        <text x="160" y="80" font-family="Arial" font-size="24" font-weight="bold" fill="#87CEEB">Z</text>
-      </g>
-    </svg>`
-
-    this.textureCache.set(cacheKey, svg)
-    return svg
-  }
-
-  createTextureFromSVG(key: string, svgContent: string) {
-    // Check if we've already created this texture
-    if (this.createdTextures.has(key)) {
-      return Promise.resolve()
-    }
-    
-    // Mark as being created to prevent duplicates
-    this.createdTextures.add(key)
-    
-    const canvas = document.createElement('canvas')
-    canvas.width = 200
-    canvas.height = 240
-    const ctx = canvas.getContext('2d')!
-    
-    const img = new Image()
-    const svgBlob = new Blob([svgContent], { type: 'image/svg+xml' })
-    const url = URL.createObjectURL(svgBlob)
-    
-    return new Promise<void>((resolve) => {
-      img.onload = () => {
-        try {
-          ctx.drawImage(img, 0, 0)
-          // Only add if not already exists in Phaser
-          if (!this.scene.textures.exists(key)) {
-            this.scene.textures.addCanvas(key, canvas)
-          }
-        } catch (error) {
-          console.warn(`Failed to create texture ${key}:`, error)
-        }
-        URL.revokeObjectURL(url)
-        resolve()
-      }
-      img.src = url
-    })
-  }
-
-
-}
 
 interface PhaserGame {
   destroy: (removeCanvas: boolean, noReturn?: boolean) => void
@@ -366,7 +70,6 @@ export default function LonelyCat() {
         cat!: Phaser.Physics.Matter.Sprite
         tree!: b3.BehaviorTree
         blackboard = new b3.Blackboard()
-        svgTextureManager!: SVGTextureManager
         animationState: AnimationState = {
           frame: 0,
           blinkTimer: 0,
@@ -378,64 +81,80 @@ export default function LonelyCat() {
           eyeState: 'open' as 'open' | 'closed',
           currentTexture: 'idle'
         }
+        preload() {
+          this.load.spritesheet('cat', '/cat-sprites.png', {
+            frameWidth: 600,
+            frameHeight: 600
+          });
+        }
 
-
-
-        async create() {
+        create() {
           this.matter.world.setBounds()
           
-          // Initialize SVG texture manager
-          this.svgTextureManager = new SVGTextureManager(this)
-          
-          // Create initial cat sprite with fallback texture
-          this.cat = this.matter.add.sprite(400, 300, 'cat')
-          this.cat.setFixedRotation()
-          
+          // Check if texture exists before creating sprite
+          if (!this.textures.exists('cat')) {
+            console.error('Cat texture not found')
+            return
+          }
+
+          // Create cat sprite from sprite sheet
+          const centerX = this.cameras.main.width / 2
+          const centerY = this.cameras.main.height / 2
+          this.cat = this.matter.add.sprite(centerX, centerY, 'cat')
+            .setFixedRotation()
+            .setDisplaySize(300, 300);
+
+          // Define tail wag animation with error handling
+          try {
+            if (this.anims.exists('tail')) {
+              this.anims.remove('tail')
+            }
+            
+            this.anims.create({
+              key: 'tail',
+              frames: this.anims.generateFrameNumbers('cat', { start: 0, end: 8 }),
+              frameRate: 8,
+              repeat: -1
+            });
+            
+            if (this.cat && this.anims.exists('tail')) {
+              this.cat.play('tail');
+              // Ensure display size remains at 300x300 after animation starts
+              this.cat.setDisplaySize(300, 300);
+            }
+          } catch (error) {
+            console.error('Failed to create or play animation:', error)
+          }
+
+          // Set physics body to match visual size
+          this.cat.setBody({
+            type: 'rectangle',
+            width: 120,
+            height: 160
+          } as any)
+
           // Set up physics for natural movement
           this.cat.setFriction(0.8)
           this.cat.setFrictionAir(0.05)
           this.cat.setBounce(0.1)
-          
-          // Generate initial SVG texture
-          await this.updateCatTexture()
-          
+
+          // Set up world bounds with margin for cat sprite (200x240 from SVG)
+          const catMargin = 120 // Half of cat width/height plus buffer
+          this.matter.world.setBounds(
+            -catMargin,
+            -catMargin,
+            this.cameras.main.width + catMargin * 2,
+            this.cameras.main.height + catMargin * 2
+          )
+
           // Create enhanced behavior tree
           this.setupEnhancedBehaviorTree()
-          
+
           // Set up input handlers
           this.setupInputHandlers()
-          
+
           // Set up accessibility
           this.setupAccessibility()
-        }
-
-        async updateCatTexture() {
-          const velocity: Velocity = hasMatterPhysics(this.cat.body) 
-            ? { x: this.cat.body.velocity.x, y: this.cat.body.velocity.y } 
-            : { x: 0, y: 0 }
-          const speed = Math.hypot(velocity.x, velocity.y)
-          
-          let svgContent: string
-          let textureKey: string
-          
-          if (this.animationState.isSleeping) {
-            svgContent = this.svgTextureManager.generateSleepingTexture(this.animationState.frame)
-            textureKey = `cat-sleeping-${this.animationState.frame % 60}`
-          } else if (speed > 0.5) {
-            svgContent = this.svgTextureManager.generateMovingTexture(velocity, this.animationState.frame)
-            textureKey = `cat-moving-${this.animationState.frame % 60}`
-            this.animationState.isMoving = true
-          } else {
-            svgContent = this.svgTextureManager.generateIdleTexture(this.animationState.frame, this.animationState.eyeState)
-            textureKey = `cat-idle-${this.animationState.frame % 60}-${this.animationState.eyeState}`
-            this.animationState.isMoving = false
-          }
-          
-          if (this.animationState.currentTexture !== textureKey) {
-            await this.svgTextureManager.createTextureFromSVG(textureKey, svgContent)
-            this.cat.setTexture(textureKey)
-            this.animationState.currentTexture = textureKey
-          }
         }
 
         setupEnhancedBehaviorTree() {
@@ -445,19 +164,19 @@ export default function LonelyCat() {
               const scene = tick.target as CatScene
               const target = scene.blackboard.get('target', scene.tree.id)
               if (!target) return b3.FAILURE
-              
+
               const cat = scene.cat
               const dx = target.x - cat.x
               const dy = target.y - cat.y
               const dist = Math.hypot(dx, dy)
-              
+
               // Add anticipation animation before movement
               if (!scene.blackboard.get('anticipationStarted', scene.tree.id)) {
                 scene.showAnticipationAnimation()
                 scene.blackboard.set('anticipationStarted', true, scene.tree.id)
                 return b3.RUNNING
               }
-              
+
               if (dist < 10) {
                 cat.setVelocity(0, 0)
                 scene.blackboard.set('target', null, scene.tree.id)
@@ -465,18 +184,18 @@ export default function LonelyCat() {
                 scene.animationState.lastInteraction = Date.now()
                 return b3.SUCCESS
               }
-              
+
               // Natural acceleration/deceleration
               const maxSpeed = 3
               const acceleration = 0.1
-              const currentSpeed = hasMatterPhysics(cat.body) 
+              const currentSpeed = hasMatterPhysics(cat.body)
                 ? Math.hypot(cat.body.velocity.x, cat.body.velocity.y)
                 : 0
               const targetSpeed = Math.min(maxSpeed, dist * 0.05)
-              
+
               const newSpeed = Math.min(currentSpeed + acceleration, targetSpeed)
               cat.setVelocity((dx / dist) * newSpeed, (dy / dist) * newSpeed)
-              
+
               return b3.RUNNING
             }
           }
@@ -486,25 +205,38 @@ export default function LonelyCat() {
             tick(tick: b3.Tick<CatScene>) {
               const scene = tick.target as CatScene
               const timeSinceLastInteraction = Date.now() - scene.animationState.lastInteraction
-              
+
               if (timeSinceLastInteraction > 30000) { // 30 seconds
                 scene.animationState.isSleeping = true
                 scene.cat.setVelocity(0, 0)
                 return b3.SUCCESS
               }
-              
+
               return b3.FAILURE
             }
           }
 
-          // Enhanced Wander behavior
+          // Enhanced Wander behavior with gentle boundary attraction
           const EnhancedWander = class extends b3.Action {
             tick(tick: b3.Tick<CatScene>) {
               const scene = tick.target as CatScene
               const cat = scene.cat
-              
+
               if (scene.animationState.isSleeping) return b3.FAILURE
-              
+
+              // Gentle attraction toward center if cat gets too far out
+              const centerX = scene.cameras.main.width / 2
+              const centerY = scene.cameras.main.height / 2
+              const distanceFromCenter = Math.hypot(cat.x - centerX, cat.y - centerY)
+              const maxDistance = Math.min(scene.cameras.main.width, scene.cameras.main.height) * 0.4
+
+              if (distanceFromCenter > maxDistance && Math.random() < 0.02) {
+                const angleToCenter = Math.atan2(centerY - cat.y, centerX - cat.x)
+                const speed = 0.3 + Math.random() * 0.3
+                cat.setVelocity(Math.cos(angleToCenter) * speed, Math.sin(angleToCenter) * speed)
+                return b3.RUNNING
+              }
+
               if (Math.random() < 0.005) {
                 const angle = Math.random() * Math.PI * 2
                 const speed = 0.5 + Math.random() * 0.5
@@ -519,7 +251,7 @@ export default function LonelyCat() {
             tick(tick: b3.Tick<CatScene>) {
               const scene = tick.target as CatScene
               const userProximity = scene.blackboard.get('userProximity', scene.tree.id)
-              
+
               if (userProximity) {
                 scene.animationState.lastInteraction = Date.now()
                 scene.animationState.isSleeping = false
@@ -529,7 +261,7 @@ export default function LonelyCat() {
                 }
                 return b3.SUCCESS
               }
-              
+
               return b3.FAILURE
             }
           }
@@ -546,11 +278,17 @@ export default function LonelyCat() {
         }
 
         setupInputHandlers() {
-          // Enhanced click handler
+          // Enhanced click handler with visual feedback
           this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
             this.blackboard.set('target', { x: pointer.worldX, y: pointer.worldY }, this.tree.id)
             this.animationState.lastInteraction = Date.now()
             this.animationState.isSleeping = false
+
+            // Add click feedback animation
+            this.showClickFeedback(pointer.worldX, pointer.worldY)
+
+            // Cat looks toward target immediately
+            this.showTargetAttention(pointer.worldX, pointer.worldY)
           })
 
           // Hover detection
@@ -558,7 +296,7 @@ export default function LonelyCat() {
             const distance = Phaser.Math.Distance.Between(
               pointer.worldX, pointer.worldY, this.cat.x, this.cat.y
             )
-            
+
             if (distance < 100) {
               this.blackboard.set('userProximity', true, this.tree.id)
               this.blackboard.set('cursorPosition', { x: pointer.worldX, y: pointer.worldY }, this.tree.id)
@@ -576,7 +314,7 @@ export default function LonelyCat() {
               canvas.setAttribute('aria-label', 'Interactive cat game - click to guide cat movement, hover for attention')
               canvas.setAttribute('role', 'application')
               canvas.setAttribute('tabindex', '0')
-              
+
               // Keyboard controls
               canvas.addEventListener('keydown', (event) => {
                 switch (event.key) {
@@ -612,6 +350,34 @@ export default function LonelyCat() {
           })
         }
 
+        showClickFeedback(x: number, y: number) {
+          // Create ripple effect at click location
+          const ripple = this.add.circle(x, y, 30, 0x7FFF00, 0.6)
+            .setScale(0.2);
+
+          this.tweens.add({
+            targets: ripple,
+            scale: 1,
+            alpha: 0,
+            duration: 400,
+            ease: 'Power2',
+            onComplete: () => ripple.destroy()
+          });
+        }
+
+        showTargetAttention(targetX: number, targetY: number) {
+          // Cat ears perk up and look toward target
+          const angle = Math.atan2(targetY - this.cat.y, targetX - this.cat.x)
+
+          this.tweens.add({
+            targets: this.cat,
+            rotation: angle * 0.1, // Subtle rotation toward target
+            duration: 300,
+            ease: 'Power2',
+            yoyo: true
+          })
+        }
+
         triggerBlinkAnimation() {
           this.animationState.eyeState = 'closed'
           this.time.delayedCall(150, () => {
@@ -630,7 +396,7 @@ export default function LonelyCat() {
               }, this.tree.id)
             }
           ]
-          
+
           const randomBehavior = behaviors[Math.floor(Math.random() * behaviors.length)]
           randomBehavior()
         }
@@ -638,18 +404,18 @@ export default function LonelyCat() {
         update(_time: number, delta: number) {
           // Update animation frame
           this.animationState.frame += 1
-          
+
+          // Ensure cat sprite stays at correct display size
+          if (this.cat && (this.cat.displayWidth !== 300 || this.cat.displayHeight !== 300)) {
+            this.cat.setDisplaySize(300, 300)
+          }
+
           // Update natural animations
           this.updateNaturalAnimations(_time, delta)
-          
+
           // Run behavior tree only if it's initialized
           if (this.tree) {
             this.tree.tick(this, this.blackboard)
-          }
-          
-          // Update SVG texture every few frames for performance
-          if (this.animationState.frame % 3 === 0) {
-            this.updateCatTexture()
           }
         }
 
@@ -662,6 +428,66 @@ export default function LonelyCat() {
             }
             this.animationState.blinkTimer = 0
           }
+          
+          // Micro-movements for realism
+          if (!this.animationState.isSleeping && Math.random() < 0.01) {
+            this.triggerMicroMovements()
+          }
+          
+          // Random ear twitching
+          if (Math.random() < 0.005) {
+            this.triggerEarTwitch()
+          }
+          
+          // Subtle body shifting
+          if (Math.random() < 0.003) {
+            this.triggerBodyShift()
+          }
+        }
+        
+        triggerMicroMovements() {
+          // Subtle head movement
+          this.tweens.add({
+            targets: this.cat,
+            rotation: (Math.random() - 0.5) * 0.1,
+            duration: 800 + Math.random() * 400,
+            ease: 'Power2.easeInOut',
+            yoyo: true
+          })
+        }
+        
+        triggerEarTwitch() {
+          // Prevent overlapping ear twitches that could cause scale accumulation
+          if (this.tweens.getTweensOf(this.cat).some(tween => tween.data && tween.data.some((d: any) => d.key === 'scaleX'))) {
+            return
+          }
+          
+          // Simulate ear twitching through subtle scale changes
+          this.tweens.add({
+            targets: this.cat,
+            scaleX: 1 + (Math.random() - 0.5) * 0.02,
+            duration: 300,
+            ease: 'Power2.easeInOut',
+            yoyo: true,
+            onComplete: () => {
+              // Ensure scale returns to exactly 1.0
+              this.cat.setScale(1.0, 1.0)
+            }
+          })
+        }
+        
+        triggerBodyShift() {
+          // Subtle body position shift
+          const currentX = this.cat.x
+          const currentY = this.cat.y
+          
+          this.tweens.add({
+            targets: this.cat,
+            x: currentX + (Math.random() - 0.5) * 6,
+            y: currentY + (Math.random() - 0.5) * 4,
+            duration: 1500 + Math.random() * 1000,
+            ease: 'Power2.easeInOut'
+          })
         }
       }
 
